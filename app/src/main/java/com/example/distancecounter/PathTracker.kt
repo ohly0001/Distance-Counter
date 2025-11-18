@@ -13,6 +13,7 @@ class PathTracker(
     private val epsilon: Float = 0.1f,       // m/s² threshold for "stop"
     private val angleThreshold: Float = 10f, // degrees for curve detection
     private val minDistance: Double = 0.5,   // meters
+    private val autoCloseDistance: Double = 1.0,
     private val stopTimeThreshold: Long = 500 // ms
 ) : SensorEventListener {
 
@@ -22,6 +23,8 @@ class PathTracker(
 
     private var isRunning = false
     private var lastStopTime: Long? = null
+
+    var isAutoClosing = false
 
     private var lastLinearAccelMagnitude: Float = 0f
 
@@ -37,13 +40,27 @@ class PathTracker(
     }
 
     fun stopRecording() {
+        isAutoClosing = false
         isRunning = false
     }
 
-    fun closePath() {
+    fun quickClosePath() {
         if (!isRunning && path.isNotEmpty()) {
             path.add(path.first())
         }
+        stopRecording()
+    }
+
+    private fun calculateDistance(p1: PathNode, p2: PathNode): Double {
+        return sqrt(doubleArrayOf(p2.x - p1.x, p2.y - p1.y, p2.z - p1.z).sumOf { it * it })
+    }
+
+    fun calculatePathDistance(): Double {
+        var d = 0.0
+        for (i in 0 until path.lastIndex) {
+            d += calculateDistance(path[i], path[i + 1])
+        }
+        return d
     }
 
     fun addLocation(location: Location) {
@@ -90,6 +107,10 @@ class PathTracker(
 
         if (addNode) {
             path.add(node)
+
+            if (isAutoClosing && path.size > 1 && calculateDistance(path.first(), node) < autoCloseDistance)
+                stopRecording()
+
             previousSegmentVector = deltaVector
             lastNode = node
         }
