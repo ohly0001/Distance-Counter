@@ -64,6 +64,9 @@ class MainActivity : ComponentActivity() {
 
 }
 
+//TODO show path as 3d overlay on camera screen calculated using relative distance
+//TODO map overlay
+
 @Composable
 fun menu() {
     val toggleText = remember { mutableStateOf("Start") }
